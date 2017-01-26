@@ -226,6 +226,7 @@ p {
   font-weight: 400;
   margin-top: 0;
   margin-bottom: 5px;
+  text-decoration: underline;
 }
 .main-wrapper .projects-section .intro {
   margin-bottom: 30px;
@@ -249,6 +250,12 @@ p {
 .skillset .level-bar-inner {
   height: 12px;
   background: #6c92a3;
+}
+.tech-tag {
+  margin-right: 5px;
+}
+.tech-tag a:link {
+  color: white;
 }
 .footer {
   padding: 30px;
