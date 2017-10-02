@@ -41,13 +41,13 @@
     </address>
   in <a href="/category/imitatorbot.html">ImitatorBot</a>
 </div>		
-		<h1>What is ImitatorBot?</h1>
-<p>ImitatorBot is a <a href="">SlackBot</a> that generates nonsense messages that are written in the same style as the co-worker of your choice. It does this by creating n-gram models for each of your co-workers from their respective message histories. <a href="http://text-analytics101.rxnlp.com/2014/11/what-are-n-grams.html">What are n-grams?</a></p>
-<h1>Usage</h1>
+		<h2>What is ImitatorBot?</h2>
+<p>ImitatorBot is a <a href="https://api.slack.com/bot-users">SlackBot</a> that generates nonsense messages that are written in the same style as the co-worker of your choice. It does this by creating n-gram models for each of your co-workers from their respective message histories. <a href="http://text-analytics101.rxnlp.com/2014/11/what-are-n-grams.html">What are n-grams?</a></p>
+<h2>Usage</h2>
 <p>ImitatorBot is a <a href="https://api.slack.com/bot-users">bot user</a> that can be added to channels in your company's slack.</p>
 <p>To request an imitation you either DM ImitatorBot or mention it in a channel or group chat. If the message includes <code>imitate</code> as well as a mention of another user then your imitation should be on its way!</p>
 <p>For example: <code>@imitatorBot</code> imitate <code>@nigel</code></p>
-<h1>Architecture Overview</h1>
+<h2>Architecture Overview</h2>
 <p>On the surface ImitatorBot is quite simple. It needs to...</p>
 <ol>
 <li>build n-gram models for the users in your company</li>
@@ -55,16 +55,30 @@
 <li>generate the message and respond in the same channel or chat</li>
 </ol>
 <p>Lets unpack these requirements and see just how deep the rabbit hole goes...</p>
-<h2>Scraping Message History</h2>
+<h3>Scraping Message History</h3>
 <p>A message history presents some unique challenges as a corpus. As it is being updated regularly, we need a strategy to keep our n-gram models up to date. One approach might be to run a job on some interval that scrapes the complete history of every channel that the bot is a member of. For small companies without too much chatter this could be viable, but once you have a couple hundred employees you will very quickly start going over <a href="https://api.slack.com/docs/rate-limits">Slack's rate limits</a>. Also, as tempting as it is to train the model on the entire data set, you can get satisfying results from a relatively small sample.</p>
-<p>To accommodate these constraints I implemented an "on-demand" strategy. Whenever a request is made for an imitation, before responding ImitatorBot scrapes the history only from the channel or group from which the request was made and scrapes only the number of messages as set by an environment variable. The first time a channel is scraped, it is from the present into the past. On subsequent requests on the same channel, the job runs from the latest scraped to the present and then from the earliest scraped to the past. There is also an environment variable that sets the number of messages to be scraped after the response in the background.</p>
-<p><em>See my post on the <a href="">implementation of this strategy</a> (Coming soon).</em></p>
+<p>To accommodate these constraints I implemented an "on-demand" strategy. Whenever a request is made for an imitation, before responding ImitatorBot scrapes the history only from the channel or group from which the request was made and scrapes only the number of messages as set by an environment variable. The first time a channel is scraped, it is from the present into the past. On subsequent requests to the same channel, the job runs from the latest scraped to the present and then from the earliest scraped to the past. There is also an environment variable that sets the number of messages to be scraped after the response in the background.</p>
+<p><em>See my post on the <a href="">implementation of on-demand scraping</a> (Coming soon).</em></p>
 <p>This approach enables the manager of the bot to limit the number of requests that are made to the slack API. The number of requests that are made are also dependent on the popularity of the bot. The more it is used, the stronger the models get. If it is not used at all, then there are no requests to the API.</p>
-<h2>Training N-gram models</h2>
-<p>The n-gram models are conceptually simple. ImitatorBot uses 2-grams so a model for a particular user can be thought of as a list of every pair of words they ever typed in succession with a probability indicating the likelihood that a</p>
-<p>Later articles:</p>
-<p>Implementing and Persisting weighted lists
-Implementing the On-demand scraping</p>	
+<h3>Training N-gram models</h3>
+<p>As messages are scraped, they are fed to their user's n-gram model. The message is tokenized (splitting on space characters) and then each pair of words is entered into the model. In the ImitatorBot use case, the n-gram model is being used to generate novel sentences. The generation starts by randomly selecting a single word that the user once started a sentence with. It then finds every word that ever followed the selected word and randomly selects another word from this list. This is repeated until an <code>&lt;end of message&gt;</code> character is selected. A naive model structure might look like this:</p>
+<div class="highlight"><pre><span></span>let message1 = &quot;the cat in the hat&quot;;
+let message2 = &quot;the cat in the frat&quot;;
+let message3 = &quot;the dog and the frog&quot;;
+let model = {
+  &#39;&lt;start of message&gt;&#39;: [&#39;the&#39;]
+  &#39;the&#39;: [&#39;cat&#39;, &#39;hat&#39;, &#39;dog&#39;, &#39;frog&#39;, &#39;frat&#39;],
+  &#39;cat&#39;: [&#39;in&#39;],
+  &#39;hat&#39;: [&#39;&lt;end of message&gt;&#39;],
+  &#39;dog&#39;: [&#39;and&#39;],
+  &#39;and&#39;: [&#39;the&#39;],
+  &#39;frog&#39;: [&#39;&lt;end of message&gt;&#39;]
+}
+</pre></div>
+
+
+<p>This implemetation succeeds in capturing all of the sequences of words that occur in the training text and it can easily be referenced to generate novel sentences. The only problem is that this model does not capture probabilities. For example when <code>the</code> is the selected word, the list of potential next words is <code>['cat', 'hat', 'dog', 'frog', 'frat']</code>, if we randomly select from this list, each word has an equal probability of being selected. This does not represent the training text since <code>cat</code> occurs twice after <code>the</code> while the other tokens occur only once. If we want the generated text to be more realistic the list of words must instead be a "weighted list" that can apply relative weights to each of the words, skewing their probabilities of being randomly selected.</p>
+<p><em>See my post on the <a href="">implementation of a weighted list</a> (Coming soon).</em></p>	
 
 	</article>
 
