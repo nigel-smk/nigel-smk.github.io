@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="">	
+<head>
+	<meta charset="utf-8"/>
+	<title>Building ImitatorBot - Nigel Maynard: Iterations</title>	
+	<meta name="author" content="Nigel Maynard">
+	
+
+	<meta name="description" content="What is ImitatorBot? ImitatorBot is a SlackBot that generates nonsense messages that are written in the same style as the co-worker of your choice. It does this by creating n-gram models for each of your co-workers from their respective message histories. What are n-grams? Usage ImitatorBot is a bot user …">
+
+
+	<link rel="top" href="#" /><link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,300italic,400italic,600italic|Source+Code+Pro' rel='stylesheet' type='text/css'></link>
+	<link rel="stylesheet" href="/theme/css/main.css" type="text/css" />
+		
+
+</head>
+	
+<body>
+
+    <div class="container">
+	  
+	  <header role="banner">
+	    <div class="feeds">
+	    </div>
+		<a href="" class="title">Nigel Maynard: Iterations</a>
+      </header>
+	
+	  <div class="wrapper">
+
+		  <div role="main" class="content">
+	<article class="full">
+			
+		<h1>Building ImitatorBot</h1>
+		
+<div class="metadata">
+  <time datetime="2017-09-20T18:46:00-04:00" pubdate>Wed 20 September 2017</time>
+    <address class="vcard author">
+      by <a class="url fn" href="/author/nigel-maynard.html">Nigel Maynard</a>
+    </address>
+  in <a href="/category/imitatorbot.html">ImitatorBot</a>
+</div>		
+		<h1>What is ImitatorBot?</h1>
+<p>ImitatorBot is a <a href="">SlackBot</a> that generates nonsense messages that are written in the same style as the co-worker of your choice. It does this by creating n-gram models for each of your co-workers from their respective message histories. <a href="http://text-analytics101.rxnlp.com/2014/11/what-are-n-grams.html">What are n-grams?</a></p>
+<h1>Usage</h1>
+<p>ImitatorBot is a <a href="https://api.slack.com/bot-users">bot user</a> that can be added to channels in your company's slack.</p>
+<p>To request an imitation you either DM ImitatorBot or mention it in a channel or group chat. If the message includes <code>imitate</code> as well as a mention of another user then your imitation should be on its way!</p>
+<p>For example: <code>@imitatorBot</code> imitate <code>@nigel</code></p>
+<h1>Architecture Overview</h1>
+<p>On the surface ImitatorBot is quite simple. It needs to...</p>
+<ol>
+<li>build n-gram models for the users in your company</li>
+<li>parse a request to generate a message for a particular user</li>
+<li>generate the message and respond in the same channel or chat</li>
+</ol>
+<p>Lets unpack these requirements and see just how deep the rabbit hole goes...</p>
+<h2>Scraping Message History</h2>
+<p>A message history presents some unique challenges as a corpus. As it is being updated regularly, we need a strategy to keep our n-gram models up to date. One approach might be to run a job on some interval that scrapes the complete history of every channel that the bot is a member of. For small companies without too much chatter this could be viable, but once you have a couple hundred employees you will very quickly start going over <a href="https://api.slack.com/docs/rate-limits">Slack's rate limits</a>. Also, as tempting as it is to train the model on the entire data set, you can get satisfying results from a relatively small sample.</p>
+<p>To accommodate these constraints I implemented an "on-demand" strategy. Whenever a request is made for an imitation, before responding ImitatorBot scrapes the history only from the channel or group from which the request was made and scrapes only the number of messages as set by an environment variable. The first time a channel is scraped, it is from the present into the past. On subsequent requests on the same channel, the job runs from the latest scraped to the present and then from the earliest scraped to the past. There is also an environment variable that sets the number of messages to be scraped after the response in the background.</p>
+<p><em>See my post on the <a href="">implementation of this strategy</a> (Coming soon).</em></p>
+<p>This approach enables the manager of the bot to limit the number of requests that are made to the slack API. The number of requests that are made are also dependent on the popularity of the bot. The more it is used, the stronger the models get. If it is not used at all, then there are no requests to the API.</p>
+<h2>Training N-gram models</h2>
+<p>The n-gram models are conceptually simple. ImitatorBot uses 2-grams so a model for a particular user can be thought of as a list of every pair of words they ever typed in succession with a probability indicating the likelihood that a</p>
+<p>Later articles:</p>
+<p>Implementing and Persisting weighted lists
+Implementing the On-demand scraping</p>	
+
+	</article>
+
+    <p>
+	<a href="https://twitter.com/share" class="twitter-share-button" data-via="" data-lang="en" data-size="large" data-related="">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+	</p>
+
+
+		  </div>	
+		  
+		  <div class="sidebar">
+
+	        <nav>
+	          <h2>Categories</h2>
+	          <ul>
+	              <li class="active"><a href="/category/imitatorbot.html">ImitatorBot</a></li>
+	          </ul>
+	        </nav>
+
+	          <aside>
+	          <h2>Social</h2>
+			    <ul class="social">
+				  <li><a href="#">You can add links in your config file</a><i></i></li>
+				  <li><a href="#">Another social link</a><i></i></li>
+			    </ul>
+			  </aside>
+
+	          <aside>
+	            <h2>Blogroll</h2>
+	            <ul>
+	                <li><a href="http://getpelican.com/">Pelican</a></li>
+	                <li><a href="http://python.org/">Python.org</a></li>
+	                <li><a href="http://jinja.pocoo.org/">Jinja2</a></li>
+	                <li><a href="#">You can modify those links in your config file</a></li>
+	            </ul>
+	          </aside>
+
+		  </div>
+
+	  </div>
+
+      <footer>
+		<p role="contentinfo">
+		  © 2013 Nigel Maynard - Proudly powered by <a href="http://alexis.notmyidea.org/pelican/">pelican</a>. Theme <a href="https://github.com/fle/pelican-simplegrey">pelican-simplegrey</a>.
+    	</p>
+
+	  </footer>	
+
+	</div>
+	
+
+</body>
+</html>
